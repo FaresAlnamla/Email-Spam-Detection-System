@@ -33,14 +33,42 @@ st.set_page_config(
 USE_LOCAL_MODEL = os.getenv("USE_LOCAL_MODEL", "true").lower() == "true"
 
 # Same thresholds you use in the API
-PROFILE_DEFINITIONS = {
-    "default": {"threshold": 0.55},
-    "balanced": {"threshold": 0.50},
-    "telco": {"threshold": 0.55},
-    "bank": {"threshold": 0.65},
-    "marketing": {"threshold": 0.45},
-    "aggressive": {"threshold": 0.45},
-    "conservative": {"threshold": 0.60},
+PROFILE_DEFINITIONS: Dict[str, Dict[str, Any]] = {
+    "default": {
+        "label": "Default (balanced)",
+        "threshold": 0.55,
+        "description": "General-purpose profile with balanced spam capture vs. false positives.",
+    },
+    "telco": {
+        "label": "Telecom / SMS filtering",
+        "threshold": 0.55,
+        "description": "Suitable for telecoms: slightly conservative to avoid blocking real OTPs / alerts.",
+    },
+    "bank": {
+        "label": "Bank / Financial (very strict)",
+        "threshold": 0.65,
+        "description": "Very strict: only mark as spam when highly confident. Protects legitimate financial messages.",
+    },
+    "marketing": {
+        "label": "Email marketing / newsletters (aggressive)",
+        "threshold": 0.45,
+        "description": "Aggressive: catch promotional & marketing spam even if it risks some false positives.",
+    },
+    "aggressive": {
+        "label": "Aggressive (max spam capture)",
+        "threshold": 0.45,
+        "description": "Maximize spam capture. Use when you prefer to over-block rather than miss spam.",
+    },
+    "balanced": {
+        "label": "Balanced (general use)",
+        "threshold": 0.55,
+        "description": "Balanced behavior similar to 'default', suitable for most use cases.",
+    },
+    "conservative": {
+        "label": "Conservative (protect REAL messages)",
+        "threshold": 0.60,
+        "description": "More conservative: only flag spam when probability is high.",
+    },
 }
 
 def _resolve_threshold(profile: Optional[str]) -> float:
@@ -682,23 +710,26 @@ st.markdown(
 
 @st.cache_data(ttl=60)
 def fetch_profiles() -> Dict[str, Any]:
-    """Fetch available profiles from the FastAPI backend."""
+    """Fetch available profiles from the FastAPI backend (if available),
+    otherwise fall back to local PROFILE_DEFINITIONS."""
     url = f"{API_BASE_URL}/profiles"
     try:
         resp = requests.get(url, timeout=5)
         resp.raise_for_status()
         return resp.json()
     except Exception:
+        # Local fallback: نفس التعريفات المستخدمة في الـ model نفسه
         return {
             "system_profile": "default",
-            "default_threshold": 0.40,
+            "default_threshold": PROFILE_DEFINITIONS["default"]["threshold"],
             "profiles": [
                 {
-                    "key": "default",
-                    "label": "Default (balanced)",
-                    "threshold": 0.40,
-                    "description": "General-purpose profile.",
+                    "key": key,
+                    "label": data["label"],
+                    "threshold": data["threshold"],
+                    "description": data["description"],
                 }
+                for key, data in PROFILE_DEFINITIONS.items()
             ],
         }
 
