@@ -763,7 +763,86 @@ def call_predict_api(text: str, profile: Optional[str]) -> Dict[str, Any]:
 
 
 def call_file_api(uploaded_file, profile: Optional[str]) -> bytes:
-    """Call the /file-predict endpoint for file-based email classification."""
+    """
+    Run file-based prediction.
+
+    - لو USE_LOCAL_MODEL = true → نستخدم الموديل محليًا داخل Streamlit.
+    - غير هيك → نرسل الملف للـ FastAPI backend على /file-predict.
+    """
+    # ==========================
+    # Local mode (no external API)
+    # ==========================
+    if USE_LOCAL_MODEL:
+        import numpy as np
+        from io import BytesIO, StringIO
+
+        vec, clf = load_local_bundle()
+        raw = uploaded_file.getvalue()
+        name = uploaded_file.name
+        ext = Path(name).suffix.lower()
+
+        # ---- قراءة الملف إلى DataFrame مثل الـ API تماماً ----
+        if ext == ".csv":
+            try:
+                df = pd.read_csv(StringIO(raw.decode("utf-8")))
+            except Exception:
+                # اعتبره نص عادي: كل سطر = رسالة
+                lines = raw.decode("utf-8").splitlines()
+                lines = [ln.strip() for ln in lines if ln.strip()]
+                df = pd.DataFrame({"text": lines})
+        elif ext in {".xlsx", ".xls"}:
+            df = pd.read_excel(BytesIO(raw))
+        elif ext == ".txt":
+            lines = raw.decode("utf-8").splitlines()
+            lines = [ln.strip() for ln in lines if ln.strip()]
+            df = pd.DataFrame({"text": lines})
+        else:
+            raise ValueError(
+                f"Unsupported file type: {ext}. Use .csv, .xlsx, or .txt"
+            )
+
+        if "text" not in df.columns:
+            # لو مافي عمود text نحاول نستخدم أول عمود
+            first_col = df.columns[0]
+            df = df.rename(columns={first_col: "text"})
+
+        df["text"] = df["text"].astype(str)
+        mask_nonempty = df["text"].str.strip().str.len() > 0
+        df = df[mask_nonempty].reset_index(drop=True)
+
+        if df.empty:
+            raise ValueError("File is empty or has no valid text rows.")
+
+        # ---- تطبيق الموديل ----
+        X = vec.transform(df["text"].tolist())
+        threshold = _resolve_threshold(profile)
+
+        spam_probs = None
+        preds: list[str] = []
+
+        if hasattr(clf, "predict_proba"):
+            proba = clf.predict_proba(X)
+            spam_idx = (clf.classes_.astype(str) == "spam").nonzero()[0]
+            spam_idx = spam_idx[0] if len(spam_idx) else (
+                1 if proba.shape[1] == 2 else 0
+            )
+            spam_probs = proba[:, spam_idx]
+            for p in spam_probs:
+                preds.append("spam" if p >= threshold else "ham")
+        else:
+            preds = clf.predict(X)
+
+        df["pred"] = preds
+        if spam_probs is not None:
+            df["spam_probability_%"] = (spam_probs * 100).round(2)
+
+        # نرجّع نفس الشي اللي يرجّعه الـ API: CSV بايتس
+        csv_bytes = df.to_csv(index=False).encode("utf-8")
+        return csv_bytes
+
+    # ==========================
+    # Remote API mode (FastAPI)
+    # ==========================
     params: Dict[str, Any] = {}
     if profile:
         params["profile"] = profile
