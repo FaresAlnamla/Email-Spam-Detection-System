@@ -1,6 +1,6 @@
 # 📧 Email Spam Detection System
 
-A machine-learning powered platform designed to classify emails and SMS messages as **spam** or **legitimate**.
+A machine-learning powered platform designed to classify emails as **spam** or **legitimate**.
 The system combines robust preprocessing, TF-IDF vectorization, and a calibrated Linear SVM model to deliver accurate, real-world spam detection suitable for security teams, developers, and data analysts.
 
 
