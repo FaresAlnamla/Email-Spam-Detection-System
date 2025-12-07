@@ -1,50 +1,143 @@
-# Using Data Science to Detect Email Fraud and Spam
+# 📧 Email Spam Detection System
 
-This repository contains the full pipeline for training and evaluating a classic ML spam/fraud email detector.
+A complete machine-learning platform for detecting spam emails and SMS messages.
+The system provides a **REST API** for automated classification and a **modern Streamlit UI** for interactive analysis, making it suitable for developers, analysts, and security teams.
 
-## Structure
-```
-spam-detector/
-├─ data/ (raw/, interim/, processed/)
-├─ notebooks/  (01_eda.ipynb, 02_modeling.ipynb, 03_eval.ipynb)
-├─ src/ (preprocess.py, features.py, train.py, evaluate.py, infer.py, utils.py)
-├─ models/ (vectorizer.pkl, model.pkl)
-├─ reports/ (figures/, tables/)
-└─ README.md, requirements.txt
+---
+
+## 🎯 Project Goals
+
+* Detect spam with high accuracy using a trained ML model
+* Provide flexible prediction modes: single message, bulk list, and full file upload
+* Offer configurable **detection profiles** (balanced, strict, aggressive…)
+* Enable developers to integrate spam classification into other systems through a simple API
+* Give end-users a beautiful UI with analytics, charts, and predictions
+
+---
+
+## 🧠 How It Works
+
+1. **Preprocessing**
+   The text is cleaned and normalized before prediction.
+
+2. **ML Model**
+   A trained TF-IDF + Linear SVM model outputs a spam probability.
+
+3. **Threshold Profiles**
+   Depending on the selected profile (bank, telco, marketing, balanced), the system decides whether the message is spam.
+
+4. **Delivery**
+   The result is returned through:
+
+   * API (JSON)
+   * Streamlit UI dashboard
+   * CSV file for batch predictions
+
+---
+
+## 📁 Key Files & Folders
+
+### **api/**
+
+Contains the FastAPI backend.
+
+* `main.py` → All API endpoints (`/predict`, `/batch`, `/file-predict`, `/profiles`, `/health`)
+
+### **src/**
+
+Utility scripts:
+
+* `train_model.py` → Train the ML model
+* `evaluate.py` → Evaluate model performance
+* `preprocess.py` → Text cleaning functions
+* `cli_predict.py` → Predict from terminal
+* `batch_predict.py` → CSV batch prediction
+* `verify_api.py` → Test all API endpoints
+
+### **models/**
+
+Stores the model files (e.g., `bundle_svm.joblib`).
+
+### **ui/**
+
+The Streamlit application.
+
+* `app.py` → Complete frontend interface
+
+### **data/raw/**
+
+Place your dataset here (e.g., `spam.csv`).
+
+---
+
+## 🚀 How to Run the Backend (API)
+
+1. Install dependencies:
+
+   ```bash
+   pip install -r ui/requirements.txt
+   ```
+
+2. Start FastAPI server:
+
+   ```bash
+   uvicorn api.main:app --host 0.0.0.0 --port 8000
+   ```
+
+3. API documentation will be available at:
+
+   ```
+   http://localhost:8000/docs
+   ```
+
+---
+
+## 🖥 How to Run the UI (Streamlit)
+
+Inside the project folder run:
+
+```bash
+streamlit run ui/app.py
 ```
 
-## Quickstart
-1) Create a virtual environment and install requirements:
-```
-python -m venv .venv && source .venv/bin/activate  # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-python -m nltk.downloader punkt stopwords wordnet
+The UI automatically connects to your API and allows:
+
+* Single email prediction
+* Bulk email file prediction
+* Probability visualization
+* Charts and analytics
+
+---
+
+## 🧪 Example Usage (API)
+
+```bash
+curl -X POST "http://localhost:8000/predict" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "You won a free gift card!"}'
 ```
 
-2) Place a labeled CSV in `data/raw/` with columns like:
-```
-label,text
-spam,"WIN a FREE iPhone now! Click this link..."
-ham,"Dear team, please find the attached report."
+---
+
+## 🧩 Training Your Own Model (Optional)
+
+```bash
+python src/train_model.py \
+  --data data/raw/spam.csv \
+  --out models/bundle_svm.joblib
 ```
 
-3) Run training (uses TF-IDF + Naive Bayes / Logistic Regression / Linear SVM baseline comparison):
-```
-python src/train.py --data data/raw/your_dataset.csv --target label --text text
-```
+---
 
-4) Evaluate on held-out split and save figures:
-```
-python src/evaluate.py --data data/raw/your_dataset.csv --target label --text text
-```
+## ✔ Summary
 
-5) Inference (CLI demo):
-```
-python src/infer.py --text "Your account is locked. Verify here: http://bit.ly/xyz"
-```
+This project provides:
 
-## Deliverables mapping
-- 5-page report figures are saved to `reports/figures/`.
-- Confusion matrices, ROC curves, and metric tables exported to `reports/tables/`.
-- Persisted artifacts in `models/`.
-- Notebooks mirror src scripts for transparency and iteration.
+* A trained ML spam detection engine
+* A full backend API
+* A modern dashboard UI
+* Tools for training, evaluation, and batch processing
+
+It is built to be **easy to run**, **simple to integrate**, and **practical for real-world use**.
+
+---
