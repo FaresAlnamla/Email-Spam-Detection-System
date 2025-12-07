@@ -8,6 +8,9 @@ import requests
 import streamlit as st
 import streamlit.components.v1 as components
 import altair as alt
+import joblib
+from pathlib import Path
+
 
 # ==========================
 # Basic config
@@ -21,6 +24,41 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed",
 )
+
+
+# ======================================
+# Local model mode (no external backend)
+# ======================================
+
+USE_LOCAL_MODEL = os.getenv("USE_LOCAL_MODEL", "true").lower() == "true"
+
+# Same thresholds you use in the API
+PROFILE_DEFINITIONS = {
+    "default": {"threshold": 0.55},
+    "balanced": {"threshold": 0.50},
+    "telco": {"threshold": 0.55},
+    "bank": {"threshold": 0.65},
+    "marketing": {"threshold": 0.45},
+    "aggressive": {"threshold": 0.45},
+    "conservative": {"threshold": 0.60},
+}
+
+def _resolve_threshold(profile: Optional[str]) -> float:
+    key = (profile or "default").lower()
+    info = PROFILE_DEFINITIONS.get(key, PROFILE_DEFINITIONS["default"])
+    return float(info["threshold"])
+
+
+@st.cache_resource
+def load_local_bundle():
+    """Load the sklearn bundle (vectorizer + model) from models/bundle_svm.joblib."""
+    base_dir = Path(__file__).resolve().parent.parent  # go from ui/ to project root
+    model_path = base_dir / "models" / "bundle_svm.joblib"
+    bundle = joblib.load(model_path)
+    vec = bundle["vectorizer"]
+    clf = bundle["model"]
+    return vec, clf
+
 
 # ==========================
 # Advanced Custom CSS with Animations
@@ -666,7 +704,51 @@ def fetch_profiles() -> Dict[str, Any]:
 
 
 def call_predict_api(text: str, profile: Optional[str]) -> Dict[str, Any]:
-    """Call the /predict endpoint for a single email."""
+    """
+    Predict spam/ham for a single email.
+
+    If USE_LOCAL_MODEL=true → run sklearn model inside Streamlit.
+    Otherwise → call external FastAPI backend.
+    """
+    if USE_LOCAL_MODEL:
+        vec, clf = load_local_bundle()
+        text = (text or "").strip()
+
+        if not text:
+            return {
+                "text": "",
+                "pred": "ham",
+                "proba_spam": None,
+                "threshold": _resolve_threshold(profile),
+                "profile": profile or "default",
+            }
+
+        X = vec.transform([text])
+        threshold = _resolve_threshold(profile)
+        proba_spam = None
+
+        if hasattr(clf, "predict_proba"):
+            import numpy as np
+
+            proba = clf.predict_proba(X)
+            spam_idx = np.where(clf.classes_.astype(str) == "spam")[0]
+            spam_idx = spam_idx[0] if len(spam_idx) else (1 if proba.shape[1] == 2 else 0)
+            proba_spam = float(proba[:, spam_idx][0])
+            label = "spam" if proba_spam >= threshold else "ham"
+        else:
+            label = str(clf.predict(X)[0])
+
+        return {
+            "text": text,
+            "pred": label,
+            "proba_spam": proba_spam,
+            "threshold": threshold,
+            "profile": profile or "default",
+        }
+
+    # --------------------
+    # Fallback: real API
+    # --------------------
     params: Dict[str, Any] = {}
     if profile:
         params["profile"] = profile
