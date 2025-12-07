@@ -1377,12 +1377,12 @@ left_spacer, center_col, right_spacer = st.columns([1, 2, 1])
 
 with center_col:
     current_label = st.radio(
-        "",
+        "Navigation",  # any non-empty label text
         ["🔍 Single Prediction", "📊 Multi Email Prediction"],
         index=0 if st.session_state["nav_tab"] == "🔍 Single Prediction" else 1,
         horizontal=True,
         key="nav_tab_radio",
-        label_visibility="collapsed",
+        label_visibility="collapsed",  # still hides it visually
     )
 
 # Update active tab
