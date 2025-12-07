@@ -1,143 +1,145 @@
 # 📧 Email Spam Detection System
 
-A complete machine-learning platform for detecting spam emails and SMS messages.
-The system provides a **REST API** for automated classification and a **modern Streamlit UI** for interactive analysis, making it suitable for developers, analysts, and security teams.
+A machine-learning powered platform designed to classify emails and SMS messages as **spam** or **legitimate**.
+The system combines robust preprocessing, TF-IDF vectorization, and a calibrated Linear SVM model to deliver accurate, real-world spam detection suitable for security teams, developers, and data analysts.
+
+
+## 🎯 Project Objectives
+
+* Build a **reliable spam detection engine** using classical machine learning.
+* Support **multiple detection profiles** (balanced, strict, aggressive…).
+* Provide **consistent prediction behavior** across single and batch inputs.
+* Ensure the system is easy to understand, extend, and integrate into other environments.
+* Offer a clear separation between data processing, model training, and inference logic.
+
+
+## 🧠 Core System Architecture
+
+The system operates through the following stages:
+
+### **1. Text Preprocessing**
+
+Raw messages are normalized using:
+
+* URL removal
+* HTML stripping
+* Token filtering
+* Lowercasing
+* Numeric/word token extraction
+
+Handled by `src/preprocess.py`.
+
+--
+
+### **2. Feature Extraction**
+
+Uses **TF-IDF vectorization** with:
+
+* Word n-grams: *(1,2)*
+* Sublinear TF scaling
+* Minimum document frequency filtering
+
+The result is a sparse numerical representation used for training and prediction.
+
+
+### **3. Machine Learning Model**
+
+The main classifier is a:
+
+### **✔ Linear Support Vector Machine (Linear SVM)**
+
+Calibrated with **CalibratedClassifierCV** to produce probability outputs.
+
+Benefits:
+
+* High accuracy on short text (SMS, emails)
+* Fast inference time
+* Well-suited for imbalanced datasets
+
+An optional **Complement Naive Bayes** model is also available for comparison.
+
+
+### **4. Decision Logic (Threshold Profiles)**
+
+Each detection profile uses a different probability threshold:
+
+| Profile          | Threshold | Behavior                            |
+| ---------------- | --------- | ----------------------------------- |
+| Balanced         | ~0.55     | General-purpose                     |
+| Bank / Financial | ~0.65     | Very strict, avoids false positives |
+| Marketing        | ~0.45     | Aggressive detection                |
+| Telco            | ~0.55     | Optimized for OTP/alerts            |
+| Conservative     | ~0.60     | Protects legitimate messages        |
+| Aggressive       | ~0.45     | Captures most spam                  |
+
+The profile determines whether the predicted probability is considered spam or legitimate.
 
 ---
 
-## 🎯 Project Goals
+## 📁 Project Structure (Folder Map)
 
-* Detect spam with high accuracy using a trained ML model
-* Provide flexible prediction modes: single message  and full file upload
-* Offer configurable **detection profiles** (balanced, strict, aggressive…)
-* Enable developers to integrate spam classification into other systems through a simple API
-* Give end-users a beautiful UI with analytics, charts, and predictions
-
----
-
-## 🧠 How It Works
-
-1. **Preprocessing**
-   The text is cleaned and normalized before prediction.
-
-2. **ML Model**
-   A trained TF-IDF + Linear SVM model outputs a spam probability.
-
-3. **Threshold Profiles**
-   Depending on the selected profile (bank, telco, marketing, balanced), the system decides whether the message is spam.
-
-4. **Delivery**
-   The result is returned through:
-
-   * API (JSON)
-   * Streamlit UI dashboard
-   * CSV file for batch predictions
-
----
-
-## 📁 Key Files & Folders
-
-### **api/**
-
-Contains the FastAPI backend.
-
-* `main.py` → All API endpoints (`/predict`, `/batch`, `/file-predict`, `/profiles`, `/health`)
-
-### **src/**
-
-Utility scripts:
-
-* `train_model.py` → Train the ML model
-* `evaluate.py` → Evaluate model performance
-* `preprocess.py` → Text cleaning functions
-* `cli_predict.py` → Predict from terminal
-* `batch_predict.py` → CSV batch prediction
-* `verify_api.py` → Test all API endpoints
-
-### **models/**
-
-Stores the model files (e.g., `bundle_svm.joblib`).
-
-### **ui/**
-
-The Streamlit application.
-
-* `app.py` → Complete frontend interface
-
-### **data/raw/**
-
-Place your dataset here (e.g., `spam.csv`).
-
----
-
-## 🚀 How to Run the Backend (API)
-
-1. Install dependencies:
-
-   ```bash
-   pip install -r ui/requirements.txt
-   ```
-
-2. Start FastAPI server:
-
-   ```bash
-   uvicorn api.main:app --host 0.0.0.0 --port 8000
-   ```
-
-3. API documentation will be available at:
-
-   ```
-   http://localhost:8000/docs
-   ```
-
----
-
-## 🖥 How to Run the UI (Streamlit)
-
-Inside the project folder run:
-
-```bash
-streamlit run ui/app.py
+```
+📦 project
+│
+├── src/                     # ML logic & utilities
+│   ├── preprocess.py        # Text normalization & cleaning
+│   ├── train_model.py       # Model training pipeline
+│   ├── evaluate.py          # Model evaluation
+│   ├── batch_predict.py     # Batch CSV predictions (CLI)
+│   └── cli_predict.py       # Command-line single prediction
+│
+├── ui/                      # Streamlit dashboard
+│   └── app.py               # Complete interactive UI
+│
+├── models/                  # Saved ML models
+│   └── bundle_svm.joblib    # TF-IDF + Calibrated Linear SVM
+│
+├── data/
+│   └── raw/                 # Training datasets (e.g., spam.csv)
+│
+├── requirements.txt         # Python dependencies
+├── README.md                # Project documentation
+└── LICENSE
 ```
 
-The UI automatically connects to your API and allows:
 
-* Single email prediction
-* Bulk email file prediction
-* Probability visualization
-* Charts and analytics
+## 🧩 Key Components
 
----
+### **ML Pipeline**
 
-## 🧪 Example Usage (API)
+* TF-IDF Vectorizer
+* Linear SVM Classifier
+* Probability calibration
+* Custom thresholding per profile
 
-```bash
-curl -X POST "http://localhost:8000/predict" \
-  -H "Content-Type: application/json" \
-  -d '{"text": "You won a free gift card!"}'
-```
+### **Preprocessing Layer**
 
----
+* Normalized input text
+* Clean Unicode-safe pipeline
+* Duplicate & empty message filtering
 
-## 🧩 Training Your Own Model (Optional)
+### **Prediction Features**
 
-```bash
-python src/train_model.py \
-  --data data/raw/spam.csv \
-  --out models/bundle_svm.joblib
-```
+* Single message classification
+* Batch prediction (CSV/Excel)
+* Profile-based thresholding
+* Spam probability scoring
 
----
+### **UI Features (Streamlit)**
+
+* Real-time classification
+* Probability visual charts
+* Multi-profile selection
+* File upload for batch analysis
+
+
 
 ## ✔ Summary
 
-This project provides:
+This project provides a **fully structured, algorithmically solid** spam detection system using classical ML techniques.
+It includes:
 
-* A trained ML spam detection engine
-* A full backend API
-* A modern dashboard UI
-* Tools for training, evaluation, and batch processing
-
-It is built to be **easy to run**, **simple to integrate**, and **practical for real-world use**.
-
----
+* A trained and packaged SVM-based classifier
+* Preprocessing utilities
+* A polished interactive UI
+* Tools for training, evaluating, and debugging models
