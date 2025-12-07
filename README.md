@@ -8,7 +8,7 @@ The system provides a **REST API** for automated classification and a **modern S
 ## 🎯 Project Goals
 
 * Detect spam with high accuracy using a trained ML model
-* Provide flexible prediction modes: single message, bulk list, and full file upload
+* Provide flexible prediction modes: single message  and full file upload
 * Offer configurable **detection profiles** (balanced, strict, aggressive…)
 * Enable developers to integrate spam classification into other systems through a simple API
 * Give end-users a beautiful UI with analytics, charts, and predictions
