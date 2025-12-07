@@ -1725,7 +1725,7 @@ elif current_tab == "file":
                             )
                         elif spam_rate_pct < 70:
                             st.warning(
-                                f"⚡ Mixed results in file: about **{spam_rate_pct:.1f}% spam. "
+                                f"⚡ Mixed results in file: about {spam_rate_pct:.1f}% spam. "
                                 "Review suspicious rows or adjust your profile."
                             )
                         else:
