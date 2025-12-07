@@ -29,7 +29,7 @@ Raw messages are normalized using:
 
 Handled by `src/preprocess.py`.
 
---
+
 
 ### **2. Feature Extraction**
 
@@ -74,7 +74,7 @@ Each detection profile uses a different probability threshold:
 
 The profile determines whether the predicted probability is considered spam or legitimate.
 
----
+
 
 ## 📁 Project Structure (Folder Map)
 
