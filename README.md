@@ -79,27 +79,41 @@ The profile determines whether the predicted probability is considered spam or l
 ## 📁 Project Structure (Folder Map)
 
 ```
-📦 project
+project/
+├─ .devcontainer/
+│  └─ devcontainer.json      # VS Code / Dev Container configuration
 │
-├── src/                     # ML logic & utilities
-│   ├── preprocess.py        # Text normalization & cleaning
-│   ├── train_model.py       # Model training pipeline
-│   ├── evaluate.py          # Model evaluation
-│   ├── batch_predict.py     # Batch CSV predictions (CLI)
-│   └── cli_predict.py       # Command-line single prediction
+├─ api/                      # FastAPI backend (prediction service)
+│  ├─ main.py                # API entrypoint (endpoints, routing, server)
+│  └─ schemas.py             # Pydantic models: request/response schemas
 │
-├── ui/                      # Streamlit dashboard
-│   └── app.py               # Complete interactive UI
+├─ src/                      # Core ML logic & utilities (offline tools)
+│  ├─ preprocess.py          # Text cleaning, normalization & feature prep
+│  ├─ train_model.py         # Training pipeline for spam classifier(s)
+│  ├─ evaluate.py            # Evaluation scripts & metrics reporting
+│  ├─ cli_predict.py         # Single-email prediction from command line
+│  ├─ inspect_model.py       # Inspect vectorizer, vocabulary & parameters
+│  ├─ naive_bayes.py         # Legacy Naive Bayes experiments/utilities
+│  ├─ test_api.py            # Local tests for API endpoints
+│  └─ verify_api.py          # Health checks / verification helpers
 │
-├── models/                  # Saved ML models
-│   └── bundle_svm.joblib    # TF-IDF + Calibrated Linear SVM
+├─ ui/                       # Streamlit dashboard (front-end)
+│  └─ app.py                 # Interactive UI for single & batch prediction
 │
-├── data/
-│   └── raw/                 # Training datasets (e.g., spam.csv)
+├─ models/                   # Saved ML models
+│  ├─ bundle_svm.joblib      # ⭐ MAIN MODEL: TF-IDF + Calibrated Linear SVM
+│  │                         #    - Current default in the project
+│  │                         #    - Higher accuracy & more stable probabilities
+│  │
+│  └─ spam_nb_baseline.joblib# BASELINE MODEL: Naive Bayes (older, less precise)
+│                            #    - Kept for comparison & experiments only
 │
-├── requirements.txt         # Python dependencies
-├── README.md                # Project documentation
-└── LICENSE
+├─ data/                     # (local, usually git-ignored)
+│  └─ raw/                   # Original datasets (e.g.,spam.csv)
+│
+├─ requirements.txt          # Python dependencies (API + UI + ML)
+├─ README.md                 # Project overview, setup & usage guide
+└─ LICENSE                   # Apache 2.0 license
 ```
 
 
